@@ -1,7 +1,6 @@
-import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core'; // <--- Añadido OnDestroy
 import { CommonModule } from '@angular/common';
 import { Chessground } from 'chessground';
-import { Config } from 'chessground/config';
 import { Api } from 'chessground/api';
 import { Key } from 'chessground/types';
 import { Chess } from 'chess.js';
@@ -11,17 +10,16 @@ import { Chess } from 'chess.js';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './app.html',
-  styleUrls: ['./app.css'],
 })
-export class App implements AfterViewInit {
-  // Referencia al <div> del HTML donde pintaremos el tablero
+export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('chessBoard') chessBoard!: ElementRef;
 
   private chess = new Chess();
-  private cg!: Api; // Aquí guardaremos la instancia del tablero visual
+  private cg!: Api;
+  private resizeObserver!: ResizeObserver;
 
   ngAfterViewInit(): void {
-    // Inicializamos Chessground directamente en el elemento nativo
+    // 1. Inicializar Tablero
     this.cg = Chessground(this.chessBoard.nativeElement, {
       orientation: 'white',
       coordinates: true,
@@ -36,11 +34,24 @@ export class App implements AfterViewInit {
       },
     });
 
-    // Sincronizamos la posición inicial
     this.updateBoard();
+
+    // 2. MAGIA RESPONSIVE:
+    // Chessground necesita saber si su contenedor cambia de tamaño para redibujar las piezas
+    this.resizeObserver = new ResizeObserver(() => {
+      this.cg.redrawAll();
+    });
+    this.resizeObserver.observe(this.chessBoard.nativeElement);
   }
 
-  // --- LÓGICA DEL JUEGO ---
+  ngOnDestroy() {
+    // Limpieza buena educación
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+  }
+
+  // --- LÓGICA DEL JUEGO (IGUAL QUE ANTES) ---
 
   private getLegalMoves(): Map<Key, Key[]> {
     const moves = new Map<Key, Key[]>();
@@ -57,23 +68,18 @@ export class App implements AfterViewInit {
     try {
       const move = this.chess.move({ from: orig, to: dest, promotion: 'q' });
       if (move) {
-        // Movimiento legal: actualizamos el estado visual
         this.updateBoard();
         this.checkGameStatus();
       } else {
-        // Movimiento ilegal (aunque Chessground suele bloquearlo): deshacemos
         this.cg.set({ fen: this.chess.fen() });
       }
     } catch (e) {
-      // Si hay error, reseteamos la posición visual a la lógica
       this.cg.set({ fen: this.chess.fen() });
     }
   }
 
   private updateBoard() {
     const turn = this.chess.turn() === 'w' ? 'white' : 'black';
-
-    // Usamos la API nativa (.set) para actualizar el tablero
     this.cg.set({
       fen: this.chess.fen(),
       turnColor: turn,
@@ -81,7 +87,7 @@ export class App implements AfterViewInit {
         color: turn,
         dests: this.getLegalMoves(),
       },
-      check: this.chess.inCheck(), // Ilumina el Rey si está en jaque
+      check: this.chess.inCheck(),
     });
   }
 

@@ -1,16 +1,58 @@
 /* You can add global styles to this file, and also import other style files */
-/* 1. Importamos la base de Chessground, el tema marrón y el set de piezas clásico */
+/* 1. Importamos temas visuales */
 @import 'chessground/assets/chessground.base.css';
 @import 'chessground/assets/chessground.brown.css';
 @import 'chessground/assets/chessground.cburnett.css';
 
-/* 2. Estilos globales para que la app se vea oscura y centrada */
+/* 2. Reset básico para eliminar márgenes y scroll */
+html,
 body {
-  background-color: #262421; /* Gris oscuro tipo Lichess */
-  color: #f0f0f0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  height: 100%;
   margin: 0;
+  padding: 0;
+  overflow: hidden; /* Adiós scrollbars */
+  background-color: #262421;
+  font-family: 'Segoe UI', sans-serif;
+  color: #e0e0e0;
+}
+
+/* 3. Contenedor principal que centra todo */
+.app-container {
   display: flex;
-  justify-content: center;
-  min-height: 100vh;
+  flex-direction: column;
+  justify-content: center; /* Centrado vertical */
+  align-items: center; /* Centrado horizontal */
+  height: 100vh; /* Ocupa toda la altura visible */
+  width: 100vw;
+  gap: 1rem; /* Espacio entre título y tablero */
+}
+
+/* 4. Título responsivo */
+h1 {
+  font-size: 2rem;
+  margin: 0;
+  font-weight: 300;
+  opacity: 0.8;
+}
+
+/* 5. EL TABLERO RESPONSIVE */
+.board-wrapper {
+  /* MAGIA AQUÍ: 
+       'vmin' coge la dimensión más pequeña de la pantalla.
+       Si la pantalla es ancha (PC), se basa en la altura.
+       Si es alta (móvil), se basa en la anchura.
+       Restamos un poco (80vmin) para dejar margen.
+    */
+  width: 80vmin;
+  height: 80vmin;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  background: #161512; /* Fondo de seguridad mientras carga */
+}
+
+/* Para que Chessground ocupe el 100% de su contenedor padre */
+.cg-wrap {
+  width: 100%;
+  height: 100%;
 }
