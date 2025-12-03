@@ -1,1 +1,16 @@
 /* You can add global styles to this file, and also import other style files */
+/* 1. Importamos la base de Chessground, el tema marrón y el set de piezas clásico */
+@import 'chessground/assets/chessground.base.css';
+@import 'chessground/assets/chessground.brown.css';
+@import 'chessground/assets/chessground.cburnett.css';
+
+/* 2. Estilos globales para que la app se vea oscura y centrada */
+body {
+  background-color: #262421; /* Gris oscuro tipo Lichess */
+  color: #f0f0f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
