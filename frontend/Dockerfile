@@ -19,8 +19,6 @@ COPY . .
 # 7. Exponemos el puerto
 EXPOSE 4200
 
-# 8. COMANDO CORREGIDO:
+# 8. Arrancamos la app
 # - Usamos "pnpm exec" para ejecutar el binario local de ng directamente.
-# - Quitamos "--" para evitar que se interprete como argumento.
-# - Quitamos "--disable-host-check" porque en Angular 17+ suele dar error de esquema.
 CMD ["pnpm", "exec", "ng", "serve", "--host", "0.0.0.0"]
