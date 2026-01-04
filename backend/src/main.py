@@ -1,8 +1,15 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from enum import Enum
+
 import chess
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from openai import AsyncOpenAI
+from pydantic import BaseModel
+
+load_dotenv()
 
 app = FastAPI()
+client = AsyncOpenAI()
 
 
 class MoveRequest(BaseModel):
@@ -20,7 +27,7 @@ def health_check():
 
 
 @app.post("/move", response_model=MoveResponse)
-def get_move(request: MoveRequest):
+async def get_move(request: MoveRequest):
     try:
         board = chess.Board(request.fen)
     except ValueError:
@@ -29,12 +36,41 @@ def get_move(request: MoveRequest):
     if board.is_game_over():
         raise HTTPException(status_code=400, detail="Game is over")
 
-    # Dummy logic: get the first legal move
     legal_moves = list(board.legal_moves)
     if not legal_moves:
         raise HTTPException(status_code=400, detail="No legal moves available")
 
-    move = legal_moves[0]
-    san = board.san(move)
+    # Create a dynamic Enum for legal moves
+    move_map = {m.uci(): m.uci() for m in legal_moves}
+    MoveEnum = Enum("MoveEnum", move_map, type=str)
 
-    return MoveResponse(move=move.uci(), san=san)
+    # Define the response structure using the dynamic Enum
+    class MoveSelection(BaseModel):
+        reasoning: str
+        move: MoveEnum
+
+    try:
+        completion = await client.chat.completions.parse(
+            model="gpt-5-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a grandmaster chess player. Analyze the given FEN and select the best move from the available legal moves. Provide your reasoning and the chosen move.",
+                },
+                {"role": "user", "content": f"FEN: {request.fen}"},
+            ],
+            response_format=MoveSelection,
+        )
+
+        selected_move_data = completion.choices[0].message.parsed
+        if not selected_move_data:
+            raise HTTPException(status_code=500, detail="Failed to parse LLM response")
+
+        move_uci = selected_move_data.move.value
+        move = chess.Move.from_uci(move_uci)
+        san = board.san(move)
+
+        return MoveResponse(move=move_uci, san=san)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
