@@ -57,6 +57,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.cg.set({ orientation: this.currentOrientation });
   }
 
+  resetBoard() {
+    this.chess.reset();
+    this.updateBoard();
+  }
+
   // --- LÓGICA DEL JUEGO (IGUAL QUE ANTES) ---
 
   private getLegalMoves(): Map<Key, Key[]> {

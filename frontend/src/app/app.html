@@ -28,5 +28,19 @@
         <path d="M16 21h5v-5" />
       </svg>
     </button>
+
+    <!-- Reset Board Button (Glassmorphism) -->
+    <button (click)="resetBoard()" class="absolute -left-6 -bottom-6 w-14 h-14 flex items-center justify-center
+             bg-white/10 backdrop-blur-md border border-white/20 rounded-full
+             text-chess-text hover:text-white hover:bg-white/20 hover:scale-110 hover:border-white/40
+             active:scale-95 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]
+             transition-all duration-300 ease-out z-50 group" title="Reiniciar Tablero">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 transition-transform duration-500 group-hover:-rotate-180"
+        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    </button>
   </div>
 </div>
