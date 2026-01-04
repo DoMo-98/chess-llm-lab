@@ -5,17 +5,28 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: chess-frontend
-    
+
     # Mapea el puerto 4200 de tu PC al 4200 del contenedor
     ports:
       - "4200:4200"
-    
+
     # Volúmenes para desarrollo en tiempo real (Hot Reload)
     volumes:
-      - ./frontend:/app             # Sincroniza tu código local con el contenedor
-      - /app/node_modules           # TRUCO: Evita que se sobrescriban los node_modules internos
-      - /app/.angular               # TRUCO: Cache de angular
-    
+      - ./frontend:/app # Sincroniza tu código local con el contenedor
+      - /app/node_modules # TRUCO: Evita que se sobrescriban los node_modules internos
+      - /app/.angular # TRUCO: Cache de angular
+
     # Configuración para que el Hot Reload funcione bien en Windows/WSL/Linux
     environment:
       - CHOKIDAR_USEPOLLING=true
+
+  backend:
+    build:
+      context: ./backend
+    container_name: chess-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/src:/app/src
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
