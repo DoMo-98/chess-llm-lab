@@ -1,5 +1,19 @@
 {
     "css.lint.unknownAtRules": "ignore",
     "scss.lint.unknownAtRules": "ignore",
-    "less.lint.unknownAtRules": "ignore"
+    "less.lint.unknownAtRules": "ignore",
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll": "explicit"
+        }
+    },
+    "python.languageServer": "None",
+    "basedpyright.analysis.typeCheckingMode": "standard",
+    "basedpyright.analysis.extraPaths": [
+        "backend/src"
+    ],
+    "basedpyright.analysis.autoImportCompletions": true
 }
