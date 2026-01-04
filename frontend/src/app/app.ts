@@ -1,9 +1,15 @@
-import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core'; // <--- Añadido OnDestroy
+import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, inject, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Chessground } from 'chessground';
 import { Api } from 'chessground/api';
 import { Key } from 'chessground/types';
 import { Chess } from 'chess.js';
+
+interface MoveResponse {
+  move: string;
+  san: string | null;
+}
 
 @Component({
   selector: 'app-root',
@@ -14,55 +20,79 @@ import { Chess } from 'chess.js';
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('chessBoard') chessBoard!: ElementRef;
 
+  private http = inject(HttpClient);
+  private zone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
   private chess = new Chess();
   private cg!: Api;
   private resizeObserver!: ResizeObserver;
   private currentOrientation: 'white' | 'black' = 'white';
+  private apiUrl = 'http://localhost:8000';
+
+  isLoading = false;
+
+  get playerColor(): 'white' | 'black' {
+    return this.currentOrientation;
+  }
+
+  get llmColor(): 'white' | 'black' {
+    return this.currentOrientation === 'white' ? 'black' : 'white';
+  }
 
   ngAfterViewInit(): void {
-    // 1. Inicializar Tablero
-    this.cg = Chessground(this.chessBoard.nativeElement, {
-      orientation: this.currentOrientation,
-      coordinates: true,
-      movable: {
-        color: 'white',
-        free: false,
-        dests: this.getLegalMoves(),
-        showDests: true,
-        events: {
-          after: (orig, dest) => this.onMove(orig, dest),
+    this.zone.runOutsideAngular(() => {
+      this.cg = Chessground(this.chessBoard.nativeElement, {
+        orientation: this.currentOrientation,
+        coordinates: true,
+        movable: {
+          color: this.playerColor,
+          free: false,
+          dests: this.getLegalMoves(),
+          showDests: true,
+          events: {
+            after: (orig, dest) => {
+              this.zone.run(() => {
+                this.onMove(orig, dest);
+              });
+            },
+          },
         },
-      },
+      });
+
+      this.resizeObserver = new ResizeObserver(() => {
+        this.zone.run(() => {
+          this.cg.redrawAll();
+          this.cdr.detectChanges();
+        });
+      });
+      this.resizeObserver.observe(this.chessBoard.nativeElement);
     });
 
     this.updateBoard();
-
-    // 2. MAGIA RESPONSIVE:
-    // Chessground necesita saber si su contenedor cambia de tamaño para redibujar las piezas
-    this.resizeObserver = new ResizeObserver(() => {
-      this.cg.redrawAll();
-    });
-    this.resizeObserver.observe(this.chessBoard.nativeElement);
+    this.checkIfLLMTurn();
   }
 
   ngOnDestroy() {
-    // Limpieza buena educación
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
   }
 
   flipBoard() {
+    if (this.isLoading) return;
     this.currentOrientation = this.currentOrientation === 'white' ? 'black' : 'white';
     this.cg.set({ orientation: this.currentOrientation });
+    this.updateBoard();
+    this.checkIfLLMTurn();
   }
 
   resetBoard() {
+    if (this.isLoading) return;
     this.chess.reset();
+    this.isLoading = false;
     this.updateBoard();
+    this.checkIfLLMTurn();
   }
-
-  // --- LÓGICA DEL JUEGO (IGUAL QUE ANTES) ---
 
   private getLegalMoves(): Map<Key, Key[]> {
     const moves = new Map<Key, Key[]>();
@@ -81,6 +111,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       if (move) {
         this.updateBoard();
         this.checkGameStatus();
+        this.checkIfLLMTurn();
       } else {
         this.cg.set({ fen: this.chess.fen() });
       }
@@ -89,21 +120,90 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  private checkIfLLMTurn() {
+    if (this.chess.isGameOver() || this.isLoading) return;
+
+    const currentTurn = this.chess.turn() === 'w' ? 'white' : 'black';
+    if (currentTurn === this.llmColor) {
+      this.requestLLMMove();
+    }
+  }
+
+  private requestLLMMove() {
+    if (this.isLoading) return;
+
+    this.isLoading = true;
+    this.disableBoard();
+    this.cdr.detectChanges();
+
+
+    setTimeout(() => {
+      this.http.post<MoveResponse>(`${this.apiUrl}/move`, {
+        fen: this.chess.fen()
+      }).subscribe({
+        next: (response) => {
+          this.zone.run(() => {
+            this.isLoading = false;
+            this.applyLLMMove(response.move);
+            this.cdr.detectChanges();
+          });
+        },
+        error: (err) => {
+          this.zone.run(() => {
+            this.isLoading = false;
+            this.updateBoard();
+            this.cdr.detectChanges();
+          });
+        }
+      });
+    }, 0);
+  }
+
+  private applyLLMMove(uciMove: string) {
+    try {
+      const from = uciMove.slice(0, 2);
+      const to = uciMove.slice(2, 4);
+      const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
+
+      const move = this.chess.move({ from, to, promotion });
+      if (move) {
+        this.updateBoard();
+        this.checkGameStatus();
+      } else {
+        this.updateBoard();
+      }
+    } catch (e) {
+      this.updateBoard();
+    }
+  }
+
+  private disableBoard() {
+    this.cg.set({
+      movable: {
+        color: undefined,
+        dests: new Map(),
+      },
+    });
+  }
+
   private updateBoard() {
     const turn = this.chess.turn() === 'w' ? 'white' : 'black';
+    const isPlayerTurn = turn === this.playerColor;
+
     this.cg.set({
       fen: this.chess.fen(),
       turnColor: turn,
       movable: {
-        color: turn,
-        dests: this.getLegalMoves(),
+        color: isPlayerTurn ? this.playerColor : undefined,
+        dests: isPlayerTurn ? this.getLegalMoves() : new Map(),
       },
       check: this.chess.inCheck(),
     });
+    this.cdr.detectChanges();
   }
 
   private checkGameStatus() {
-    if (this.chess.isCheckmate()) alert('¡Jaque Mate!');
-    else if (this.chess.isDraw()) alert('Tablas');
+    if (this.chess.isCheckmate()) alert('Checkmate!');
+    else if (this.chess.isDraw()) alert('Draw');
   }
 }

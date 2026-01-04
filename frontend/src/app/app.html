@@ -12,12 +12,23 @@
     <!-- Chess Board Component -->
     <div #chessBoard class="w-full h-full rounded-lg overflow-hidden"></div>
 
+    @if (isLoading) {
+    <div
+      class="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-40 flex items-center justify-center rounded-lg transition-all duration-300">
+      <div class="flex flex-col items-center gap-4">
+        <div class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+        <span class="text-white font-medium tracking-wider text-sm uppercase">LLM thinking...</span>
+      </div>
+    </div>
+    }
+
     <!-- Floating Action Button (Glassmorphism) -->
-    <button (click)="flipBoard()" class="absolute -right-6 -bottom-6 w-14 h-14 flex items-center justify-center
+    <button (click)="flipBoard()" [disabled]="isLoading" class="absolute -right-6 -bottom-6 w-14 h-14 flex items-center justify-center
              bg-white/10 backdrop-blur-md border border-white/20 rounded-full
              text-chess-text hover:text-white hover:bg-white/20 hover:scale-110 hover:border-white/40
              active:scale-95 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]
-             transition-all duration-300 ease-out z-50 group" title="Girar Tablero">
+             disabled:opacity-50 disabled:cursor-not-allowed
+             transition-all duration-300 ease-out z-50 group" title="Flip Board">
 
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 transition-transform duration-500 group-hover:rotate-180"
         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -30,11 +41,12 @@
     </button>
 
     <!-- Reset Board Button (Glassmorphism) -->
-    <button (click)="resetBoard()" class="absolute -left-6 -bottom-6 w-14 h-14 flex items-center justify-center
+    <button (click)="resetBoard()" [disabled]="isLoading" class="absolute -left-6 -bottom-6 w-14 h-14 flex items-center justify-center
              bg-white/10 backdrop-blur-md border border-white/20 rounded-full
              text-chess-text hover:text-white hover:bg-white/20 hover:scale-110 hover:border-white/40
              active:scale-95 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]
-             transition-all duration-300 ease-out z-50 group" title="Reiniciar Tablero">
+             disabled:opacity-50 disabled:cursor-not-allowed
+             transition-all duration-300 ease-out z-50 group" title="Reset Board">
       <svg xmlns="http://www.w3.org/2000/svg"
         class="w-6 h-6 transition-transform duration-500 group-hover:-translate-y-1" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
