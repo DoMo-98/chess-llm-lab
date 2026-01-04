@@ -1,8 +1,11 @@
-/* You can add global styles to this file, and also import other style files */
 /* 1. Importamos temas visuales */
 @import 'chessground/assets/chessground.base.css';
 @import 'chessground/assets/chessground.brown.css';
 @import 'chessground/assets/chessground.cburnett.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* 2. Reset básico para eliminar márgenes y scroll */
 html,
@@ -10,21 +13,9 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Adiós scrollbars */
-  background-color: #262421;
-  font-family: 'Segoe UI', sans-serif;
-  color: #e0e0e0;
-}
-
-/* 3. Contenedor principal que centra todo */
-.app-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Centrado vertical */
-  align-items: center; /* Centrado horizontal */
-  height: 100vh; /* Ocupa toda la altura visible */
-  width: 100vw;
-  gap: 1rem; /* Espacio entre título y tablero */
+  overflow: hidden;
+  /* Adiós scrollbars */
+  @apply bg-chess-bg text-chess-white font-sans;
 }
 
 /* 4. Título responsivo */
@@ -48,7 +39,8 @@ h1 {
 
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   border-radius: 4px;
-  background: #161512; /* Fondo de seguridad mientras carga */
+  background: #161512;
+  /* Fondo de seguridad mientras carga */
 }
 
 /* Para que Chessground ocupe el 100% de su contenedor padre */

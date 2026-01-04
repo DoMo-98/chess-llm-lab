@@ -17,11 +17,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private chess = new Chess();
   private cg!: Api;
   private resizeObserver!: ResizeObserver;
+  private currentOrientation: 'white' | 'black' = 'white';
 
   ngAfterViewInit(): void {
     // 1. Inicializar Tablero
     this.cg = Chessground(this.chessBoard.nativeElement, {
-      orientation: 'white',
+      orientation: this.currentOrientation,
       coordinates: true,
       movable: {
         color: 'white',
@@ -49,6 +50,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+  }
+
+  flipBoard() {
+    this.currentOrientation = this.currentOrientation === 'white' ? 'black' : 'white';
+    this.cg.set({ orientation: this.currentOrientation });
   }
 
   // --- LÓGICA DEL JUEGO (IGUAL QUE ANTES) ---

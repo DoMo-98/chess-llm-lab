@@ -2,6 +2,14 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.1.
 
+## Tech Stack
+
+- **Framework**: Angular 19+
+- **Styling**: Tailwind CSS (via PostCSS)
+- **Chess Logic**: chess.js
+- **Board Visualization**: chessground
+
+
 ## Development server
 
 To start a local development server, run:
