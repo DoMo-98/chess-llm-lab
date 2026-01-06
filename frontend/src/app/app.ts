@@ -1,15 +1,11 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, inject, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { Chessground } from 'chessground';
 import { Api } from 'chessground/api';
 import { Key } from 'chessground/types';
 import { Chess } from 'chess.js';
-
-interface MoveResponse {
-  move: string;
-  san: string | null;
-}
+import { MoveResponse } from './models/move-response.interface';
+import { ChessApiService } from './services/chess-api.service';
 
 @Component({
   selector: 'app-root',
@@ -20,14 +16,13 @@ interface MoveResponse {
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('chessBoard') chessBoard!: ElementRef;
 
-  private http = inject(HttpClient);
+  private chessApi = inject(ChessApiService);
   private zone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
   private chess = new Chess();
   private cg!: Api;
   private resizeObserver!: ResizeObserver;
   private currentOrientation: 'white' | 'black' = 'white';
-  private apiUrl = 'http://localhost:8000';
 
   isAIEnabled = false;
   isLoading = false;
@@ -90,7 +85,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       if (nextState) {
         // Check if API key is configured
-        this.http.get<any>(`${this.apiUrl}/health`).subscribe({
+        this.chessApi.checkHealth().subscribe({
           next: (response) => {
             if (response.openai_api_key_configured) {
               this.enableAI();
@@ -140,14 +135,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.validationError = null;
     this.cdr.detectChanges();
 
-    this.http.post(`${this.apiUrl}/config/api-key`, { api_key: this.tempApiKey }).subscribe({
+    this.chessApi.saveApiKey(this.tempApiKey).subscribe({
       next: () => {
         this.isValidating = false;
         this.showApiKeyModal = false;
         this.tempApiKey = '';
         this.enableAI();
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isValidating = false;
         if (err.status === 401) {
           this.validationError = 'Invalid API key. Please check and try again.';
@@ -240,9 +235,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
 
     setTimeout(() => {
-      this.http.post<MoveResponse>(`${this.apiUrl}/move`, {
-        fen: this.chess.fen()
-      }).subscribe({
+      this.chessApi.requestMove(this.chess.fen()).subscribe({
         next: (response) => {
           this.zone.run(() => {
             this.isLoading = false;
@@ -250,7 +243,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             this.cdr.detectChanges();
           });
         },
-        error: (err) => {
+        error: (err: any) => {
           this.zone.run(() => {
             this.isLoading = false;
             this.updateBoard();
