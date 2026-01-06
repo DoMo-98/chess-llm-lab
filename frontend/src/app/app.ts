@@ -126,6 +126,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     try {
       const move = this.chess.move({ from: orig, to: dest, promotion: 'q' });
       if (move) {
+        if (!this.isAIEnabled) {
+          this.currentOrientation = this.chess.turn() === 'w' ? 'white' : 'black';
+          this.cg.set({ orientation: this.currentOrientation });
+        }
         this.updateBoard();
         this.checkGameStatus();
         this.checkIfLLMTurn();
