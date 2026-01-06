@@ -32,6 +32,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   isAIEnabled = false;
   isLoading = false;
   isLocked = false;
+  showApiKeyModal = false;
+  tempApiKey = '';
+  validationError: string | null = null;
+  isValidating = false;
 
   get playerColor(): 'white' | 'black' {
     return this.currentOrientation;
@@ -82,14 +86,75 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   toggleAI() {
     this.zone.run(() => {
-      this.isAIEnabled = !this.isAIEnabled;
-      console.log('AI Toggle:', this.isAIEnabled ? 'ENABLED' : 'DISABLED');
+      const nextState = !this.isAIEnabled;
 
-      this.updateBoard();
+      if (nextState) {
+        // Check if API key is configured
+        this.http.get<any>(`${this.apiUrl}/health`).subscribe({
+          next: (response) => {
+            if (response.openai_api_key_configured) {
+              this.enableAI();
+            } else {
+              this.showApiKeyModal = true;
+              this.cdr.detectChanges();
+            }
+          },
+          error: () => {
+            console.error('Failed to check backend health');
+            this.showApiKeyModal = true; // Fallback to asking
+            this.cdr.detectChanges();
+          }
+        });
+      } else {
+        this.isAIEnabled = false;
+        console.log('AI Toggle: DISABLED');
+        this.updateBoard();
+      }
+    });
+  }
 
-      if (this.isAIEnabled) {
-        // Ensure we check if it's LLM's turn immediately after enabling
-        setTimeout(() => this.checkIfLLMTurn(), 50);
+  private enableAI() {
+    this.isAIEnabled = true;
+    console.log('AI Toggle: ENABLED');
+    this.updateBoard();
+    setTimeout(() => this.checkIfLLMTurn(), 50);
+  }
+
+  closeModal() {
+    this.showApiKeyModal = false;
+    this.tempApiKey = '';
+    this.validationError = null;
+    this.isValidating = false;
+    this.cdr.detectChanges();
+  }
+
+  updateTempApiKey(event: any) {
+    this.tempApiKey = event.target.value;
+    this.validationError = null; // Clear error when user types
+  }
+
+  saveApiKey() {
+    if (!this.tempApiKey || this.isValidating) return;
+
+    this.isValidating = true;
+    this.validationError = null;
+    this.cdr.detectChanges();
+
+    this.http.post(`${this.apiUrl}/config/api-key`, { api_key: this.tempApiKey }).subscribe({
+      next: () => {
+        this.isValidating = false;
+        this.showApiKeyModal = false;
+        this.tempApiKey = '';
+        this.enableAI();
+      },
+      error: (err) => {
+        this.isValidating = false;
+        if (err.status === 401) {
+          this.validationError = 'Invalid API key. Please check and try again.';
+        } else {
+          this.validationError = 'Failed to validate API key. Please try again later.';
+        }
+        this.cdr.detectChanges();
       }
     });
   }

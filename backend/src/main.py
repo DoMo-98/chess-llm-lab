@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 import chess
@@ -20,7 +21,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-client = AsyncOpenAI()
+
+# OpenAI client initialization
+_OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+def get_openai_client():
+    return AsyncOpenAI(api_key=_OPENAI_API_KEY or "missing")
+
+
+class ApiKeyRequest(BaseModel):
+    api_key: str
+
+
+@app.on_event("startup")
+async def startup_event():
+    global _OPENAI_API_KEY
+    if _OPENAI_API_KEY:
+        print("Validating initial OpenAI API key from .env...")
+        temp_client = AsyncOpenAI(api_key=_OPENAI_API_KEY)
+        try:
+            await temp_client.models.list()
+            print("Initial API key is valid.")
+        except Exception as e:
+            print(f"Initial API key is invalid: {e}")
+            _OPENAI_API_KEY = None
+
+
+@app.post("/config/api-key")
+async def set_api_key(request: ApiKeyRequest):
+    global _OPENAI_API_KEY
+
+    # Create temporary client to validate the key
+    temp_client = AsyncOpenAI(api_key=request.api_key)
+    try:
+        # Minimal call to validate the key
+        await temp_client.models.list()
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid OpenAI API key: {str(e)}")
+
+    _OPENAI_API_KEY = request.api_key
+    return {"status": "success", "message": "API key validated and updated"}
 
 
 class MoveRequest(BaseModel):
@@ -34,7 +75,7 @@ class MoveResponse(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "openai_api_key_configured": bool(_OPENAI_API_KEY)}
 
 
 @app.post("/move", response_model=MoveResponse)
@@ -60,6 +101,13 @@ async def get_move(request: MoveRequest):
         reasoning: str
         move: MoveEnum
 
+    if not _OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=412,
+            detail="OpenAI API key is missing. Please configure it in the settings.",
+        )
+
+    client = get_openai_client()
     try:
         completion = await client.chat.completions.parse(
             model="gpt-4o-mini",

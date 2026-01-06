@@ -94,4 +94,60 @@
       </svg>
     </button>
   </div>
+
+  <!-- API Key Modal -->
+  @if (showApiKeyModal) {
+  <div (window:keydown.escape)="!isValidating && closeModal()"
+    class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div (click)="closeModal()" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+    </div>
+
+    <!-- Modal Content -->
+    <div
+      class="relative w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-[0_32px_64px_rgba(0,0,0,0.5)] transform transition-all duration-300 scale-100 opacity-100 flex flex-col gap-6 ring-1 ring-white/10">
+      <div class="flex flex-col gap-2">
+        <h2 class="text-2xl font-bold text-white tracking-tight">OpenAI API Key</h2>
+        <p class="text-white/60 text-sm leading-relaxed">
+          Please provide a valid OpenAI API key to play against the LLM opponent.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <div class="relative group">
+          <input type="password" placeholder="sk-..." (input)="updateTempApiKey($event)" (keydown.enter)="saveApiKey()"
+            [disabled]="isValidating" [value]="tempApiKey"
+            class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 focus:border-white/30 transition-all duration-200"
+            [class.border-red-500/50]="validationError" [class.focus:ring-red-500/20]="validationError">
+        </div>
+
+        @if (validationError) {
+        <div class="text-red-400 text-xs px-1 animate-in fade-in slide-in-from-top-1 duration-200">
+          {{ validationError }}
+        </div>
+        }
+
+        <div class="flex gap-3 mt-2">
+          <button (click)="closeModal()" [disabled]="isValidating"
+            class="flex-1 px-4 py-3 rounded-xl border border-white/10 text-white font-medium hover:bg-white/5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200">
+            Cancel
+          </button>
+          <button (click)="saveApiKey()" [disabled]="!tempApiKey || isValidating"
+            class="flex-1 px-4 py-3 rounded-xl bg-white text-black font-bold hover:bg-white/90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2">
+            @if (isValidating) {
+            <div class="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+            Validating...
+            } @else {
+            Enable AI
+            }
+          </button>
+        </div>
+      </div>
+
+      <div class="text-[10px] text-white/30 text-center">
+        Your key will be stored temporarily for this session.
+      </div>
+    </div>
+  </div>
+  }
 </div>
