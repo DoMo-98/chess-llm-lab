@@ -2,7 +2,7 @@
 
 Backend service for the Chess LLM Lab application. Designed as a stateless chess arbiter and LLM connector.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Python**: 3.12
 - **Framework**: FastAPI
@@ -11,7 +11,7 @@ Backend service for the Chess LLM Lab application. Designed as a stateless chess
 - **Validation**: Pydantic
 - **Containerization**: Docker
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -43,7 +43,7 @@ Backend service for the Chess LLM Lab application. Designed as a stateless chess
 The API will be available at `http://localhost:8000`.
 Docs are available at `http://localhost:8000/docs`.
 
-### 🐳 Docker
+### Docker
 
 Run the backend as part of the docker-compose stack:
 
@@ -51,7 +51,7 @@ Run the backend as part of the docker-compose stack:
 docker compose up --build backend
 ```
 
-## ✅ Quality Gates
+## Quality Gates
 
 This project enforces strict quality standards using `uv` to manage tools:
 
@@ -59,7 +59,7 @@ This project enforces strict quality standards using `uv` to manage tools:
 - **Linting**: `uv run ruff check . --fix`
 - **Type Checking**: `uv run basedpyright`
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### `GET /health`
 Returns the status of the service.
