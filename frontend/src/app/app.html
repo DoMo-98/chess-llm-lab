@@ -22,6 +22,18 @@
     </div>
     }
 
+    <!-- AI Toggle (Glassmorphism) -->
+    <div
+      class="absolute -right-6 -top-6 flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-full shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-50">
+      <span class="text-xs font-bold tracking-tighter text-chess-text uppercase ml-2 select-none">AI</span>
+      <button (click)="toggleAI()" [class.bg-green-500]="isAIEnabled" [class.bg-white/20]="!isAIEnabled"
+        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-0">
+        <span [class.translate-x-5]="isAIEnabled" [class.translate-x-0]="!isAIEnabled"
+          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out">
+        </span>
+      </button>
+    </div>
+
     <!-- Floating Action Button (Glassmorphism) -->
     <button (click)="flipBoard()" [disabled]="isLoading" class="absolute -right-6 -bottom-6 w-14 h-14 flex items-center justify-center
              bg-white/10 backdrop-blur-md border border-white/20 rounded-full

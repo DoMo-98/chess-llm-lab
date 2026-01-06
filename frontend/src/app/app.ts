@@ -29,6 +29,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private currentOrientation: 'white' | 'black' = 'white';
   private apiUrl = 'http://localhost:8000';
 
+  isAIEnabled = false;
   isLoading = false;
 
   get playerColor(): 'white' | 'black' {
@@ -78,6 +79,20 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  toggleAI() {
+    this.zone.run(() => {
+      this.isAIEnabled = !this.isAIEnabled;
+      console.log('AI Toggle:', this.isAIEnabled ? 'ENABLED' : 'DISABLED');
+
+      this.updateBoard();
+
+      if (this.isAIEnabled) {
+        // Ensure we check if it's LLM's turn immediately after enabling
+        setTimeout(() => this.checkIfLLMTurn(), 50);
+      }
+    });
+  }
+
   flipBoard() {
     if (this.isLoading) return;
     this.currentOrientation = this.currentOrientation === 'white' ? 'black' : 'white';
@@ -123,10 +138,20 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   private checkIfLLMTurn() {
-    if (this.chess.isGameOver() || this.isLoading) return;
+    if (!this.isAIEnabled || this.chess.isGameOver() || this.isLoading) {
+      console.log('checkIfLLMTurn skipped:', {
+        isAIEnabled: this.isAIEnabled,
+        isGameOver: this.chess.isGameOver(),
+        isLoading: this.isLoading
+      });
+      return;
+    }
 
     const currentTurn = this.chess.turn() === 'w' ? 'white' : 'black';
+    console.log('Checking turn:', { currentTurn, llmColor: this.llmColor });
+
     if (currentTurn === this.llmColor) {
+      console.log('Triggering AI move...');
       this.requestLLMMove();
     }
   }
@@ -190,13 +215,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   private updateBoard() {
     const turn = this.chess.turn() === 'w' ? 'white' : 'black';
-    const isPlayerTurn = turn === this.playerColor;
+    const isPlayerTurn = !this.isAIEnabled || turn === this.playerColor;
 
     this.cg.set({
       fen: this.chess.fen(),
       turnColor: turn,
       movable: {
-        color: isPlayerTurn ? this.playerColor : undefined,
+        color: isPlayerTurn ? turn : undefined,
         dests: isPlayerTurn ? this.getLegalMoves() : new Map(),
       },
       check: this.chess.inCheck(),
