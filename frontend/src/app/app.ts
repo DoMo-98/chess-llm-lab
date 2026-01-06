@@ -31,6 +31,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   isAIEnabled = false;
   isLoading = false;
+  isLocked = false;
 
   get playerColor(): 'white' | 'black' {
     return this.currentOrientation;
@@ -107,8 +108,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.currentOrientation = 'white';
     this.cg.set({ orientation: this.currentOrientation });
     this.isLoading = false;
+    this.isLocked = false;
     this.updateBoard();
     this.checkIfLLMTurn();
+  }
+
+  toggleLock() {
+    this.isLocked = !this.isLocked;
   }
 
   private getLegalMoves(): Map<Key, Key[]> {
@@ -126,7 +132,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     try {
       const move = this.chess.move({ from: orig, to: dest, promotion: 'q' });
       if (move) {
-        if (!this.isAIEnabled) {
+        if (!this.isAIEnabled && !this.isLocked) {
           this.currentOrientation = this.chess.turn() === 'w' ? 'white' : 'black';
           this.cg.set({ orientation: this.currentOrientation });
         }

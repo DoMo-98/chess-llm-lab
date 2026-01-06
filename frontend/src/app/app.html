@@ -34,6 +34,33 @@
       </button>
     </div>
 
+    <!-- Lock Board Button (Glassmorphism) -->
+    @if (!isAIEnabled) {
+    <button (click)="toggleLock()" class="absolute -left-6 -top-6 w-14 h-14 flex items-center justify-center
+             bg-white/10 backdrop-blur-md border border-white/20 rounded-full
+             text-chess-text hover:text-white hover:bg-white/20 hover:scale-110 hover:border-white/40
+             active:scale-95 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)]
+             transition-all duration-300 ease-out z-50 group" [class.text-green-400]="isLocked"
+      [class.hover:text-green-300]="isLocked" [class.bg-green-500/20]="isLocked"
+      [class.hover:bg-green-500/30]="isLocked" [class.border-green-500/50]="isLocked"
+      [class.hover:border-green-400]="isLocked" [class.shadow-[0_0_20px_rgba(74,222,128,0.2)]]="isLocked"
+      [title]="isLocked ? 'Unlock Board' : 'Lock Board'">
+      @if (isLocked) {
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      } @else {
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+      </svg>
+      }
+    </button>
+    }
+
     <!-- Floating Action Button (Glassmorphism) -->
     <button (click)="flipBoard()" [disabled]="isLoading" class="absolute -right-6 -bottom-6 w-14 h-14 flex items-center justify-center
              bg-white/10 backdrop-blur-md border border-white/20 rounded-full
