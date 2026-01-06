@@ -89,6 +89,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   resetBoard() {
     if (this.isLoading) return;
     this.chess.reset();
+    this.currentOrientation = 'white';
+    this.cg.set({ orientation: this.currentOrientation });
     this.isLoading = false;
     this.updateBoard();
     this.checkIfLLMTurn();
