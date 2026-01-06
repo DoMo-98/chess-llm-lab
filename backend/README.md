@@ -28,7 +28,14 @@ Backend service for the Chess LLM Lab application. Designed as a stateless chess
     uv sync
     ```
 
-2.  **Run the Server**:
+2.  **Configuration**:
+    Copy the environment template and add your OpenAI API key:
+    ```bash
+    cp .env.template .env
+    ```
+    Edit `.env` and set your `OPENAI_API_KEY`.
+
+3.  **Run the Server**:
     ```bash
     uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     ```
