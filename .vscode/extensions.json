@@ -1,7 +1,6 @@
 {
     "recommendations": [
         "bradlc.vscode-tailwindcss",
-        "csstools.postcss",
         "charliermarsh.ruff",
         "detachhead.basedpyright"
     ]
