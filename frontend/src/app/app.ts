@@ -166,7 +166,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (this.isLoading) return;
     this.chess.reset();
     this.currentOrientation = 'white';
-    this.cg.set({ orientation: this.currentOrientation });
+    
+    // Reset board visual state (clear highlights and selection)
+    this.cg.set({ 
+      orientation: this.currentOrientation,
+      lastMove: undefined,
+      selected: undefined
+    });
+
     this.isLoading = false;
     this.isLocked = false;
     this.updateBoard();
