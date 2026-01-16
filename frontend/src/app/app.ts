@@ -271,14 +271,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   private applyLLMMove(uciMove: string) {
     try {
-      const from = uciMove.slice(0, 2);
-      const to = uciMove.slice(2, 4);
+      const from = uciMove.slice(0, 2) as Key;
+      const to = uciMove.slice(2, 4) as Key;
       const promotion = uciMove.length > 4 ? uciMove[4] : undefined;
 
       const move = this.chess.move({ from, to, promotion });
       if (move) {
-        this.updateBoard();
+        this.updateBoard([from, to]);
         this.checkGameStatus();
+        // Explicitly trigger premove check after AI move
+        this.cg?.playPremove();
       } else {
         this.updateBoard();
       }
@@ -296,7 +298,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private updateBoard() {
+  private updateBoard(lastMove?: [Key, Key]) {
     const turn = this.chess.turn() === 'w' ? 'white' : 'black';
     const isPlayerTurn = !this.isAIEnabled || turn === this.playerColor;
 
@@ -304,10 +306,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       fen: this.chess.fen(),
       turnColor: turn,
       movable: {
-        color: isPlayerTurn ? turn : undefined,
+        color: !this.isAIEnabled ? turn : this.playerColor,
         dests: isPlayerTurn ? this.getLegalMoves() : new Map(),
       },
       check: this.chess.inCheck(),
+      lastMove: lastMove ?? this.cg?.state?.lastMove
     });
     this.cdr.detectChanges();
   }
