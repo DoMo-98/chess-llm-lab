@@ -29,4 +29,5 @@ services:
     volumes:
       - ./backend/src:/app/src
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
