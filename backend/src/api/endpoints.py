@@ -21,7 +21,7 @@ async def set_api_key(request: ApiKeyRequest):
     temp_client = AsyncOpenAI(api_key=request.api_key)
     try:
         # Minimal call to validate the key
-        await temp_client.models.list()
+        _ = await temp_client.models.list()
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid OpenAI API key: {str(e)}")
 

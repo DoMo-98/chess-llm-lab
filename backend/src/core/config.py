@@ -2,21 +2,23 @@ import os
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+from src.core.logging_config import setup_logging
 
 load_dotenv()
+_ = setup_logging()
 
 # OpenAI client initialization
-_OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+_openai_api_key = os.getenv("OPENAI_API_KEY")
 
 
 def get_openai_client():
-    return AsyncOpenAI(api_key=_OPENAI_API_KEY or "missing")
+    return AsyncOpenAI(api_key=_openai_api_key or "missing")
 
 
 def set_global_api_key(api_key: str | None):
-    global _OPENAI_API_KEY
-    _OPENAI_API_KEY = api_key
+    global _openai_api_key
+    _openai_api_key = api_key
 
 
 def get_global_api_key():
-    return _OPENAI_API_KEY
+    return _openai_api_key
