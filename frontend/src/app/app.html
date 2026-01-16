@@ -1,26 +1,32 @@
-<div class="h-screen w-screen flex flex-col justify-center items-center bg-chess-bg p-4 relative overflow-hidden">
+<div class="h-screen w-screen flex flex-col items-center bg-chess-bg p-4 relative overflow-hidden">
 
   <!-- Background gradient accent -->
   <div
     class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120vmin] h-[120vmin] bg-radial-gradient from-white/5 to-transparent rounded-full pointer-events-none">
   </div>
 
+  <!-- Top Spacer (Gap between top and board) -->
+  <div class="flex-1 w-full flex items-center justify-center z-50">
+    <!-- Status Area -->
+    @if (isLoading) {
+    <div
+      class="flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2 rounded-full shadow-lg animate-pulse">
+      <div class="flex gap-1">
+        <div class="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+        <div class="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+        <div class="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></div>
+      </div>
+      <span class="text-white text-sm font-medium tracking-wide uppercase">LLM is thinking...</span>
+    </div>
+    }
+  </div>
+
   <!-- Board Wrapper with Glassmorphism shadow -->
   <div
-    class="relative w-[85vmin] h-[85vmin] max-w-[800px] max-h-[800px] rounded-lg shadow-2xl bg-chess-board ring-1 ring-white/10">
+    class="relative w-[75vmin] h-[75vmin] max-w-[800px] max-h-[800px] rounded-lg shadow-2xl bg-chess-board ring-1 ring-white/10">
 
     <!-- Chess Board Component -->
     <div #chessBoard class="w-full h-full rounded-lg overflow-hidden"></div>
-
-    @if (isLoading) {
-    <div
-      class="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-40 flex items-center justify-center rounded-lg transition-all duration-300">
-      <div class="flex flex-col items-center gap-4">
-        <div class="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
-        <span class="text-white font-medium tracking-wider text-sm">LLM thinking...</span>
-      </div>
-    </div>
-    }
 
     <!-- AI Toggle (Glassmorphism) -->
     <div
@@ -94,6 +100,9 @@
       </svg>
     </button>
   </div>
+
+  <!-- Bottom Spacer (Maintains vertical centering of the board) -->
+  <div class="flex-1 w-full"></div>
 
   <!-- API Key Modal -->
   @if (showApiKeyModal) {

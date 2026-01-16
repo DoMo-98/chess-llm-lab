@@ -58,6 +58,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             },
           },
         },
+        premovable: {
+          enabled: true,
+          showDests: true,
+          events: {
+            set: (orig: Key, dest: Key, metadata?: any) => {
+              console.log('Premove set:', { orig, dest, metadata });
+            }
+          }
+        }
       });
 
       this.resizeObserver = new ResizeObserver(() => {
@@ -166,9 +175,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (this.isLoading) return;
     this.chess.reset();
     this.currentOrientation = 'white';
-    
+
     // Reset board visual state (clear highlights and selection)
-    this.cg.set({ 
+    this.cg.set({
       orientation: this.currentOrientation,
       lastMove: undefined,
       selected: undefined
@@ -237,7 +246,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (this.isLoading) return;
 
     this.isLoading = true;
-    this.disableBoard();
     this.cdr.detectChanges();
 
 
