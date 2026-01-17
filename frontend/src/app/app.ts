@@ -23,6 +23,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private cg!: Api;
   private resizeObserver!: ResizeObserver;
   private currentOrientation: 'white' | 'black' = 'white';
+  private moveHistory: string[] = [];
+  private historyIndex = 0;
 
   isAIEnabled = false;
   isLoading = false;
@@ -78,6 +80,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       this.resizeObserver.observe(this.chessBoard.nativeElement);
     });
 
+    this.moveHistory = [this.chess.fen()];
+    this.historyIndex = 0;
     this.updateBoard();
     this.checkIfLLMTurn();
   }
@@ -183,6 +187,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       selected: undefined
     });
 
+    this.moveHistory = [this.chess.fen()];
+    this.historyIndex = 0;
     this.isLoading = false;
     this.isLocked = false;
     this.updateBoard();
@@ -191,6 +197,42 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   toggleLock() {
     this.isLocked = !this.isLocked;
+  }
+
+  goToFirst() {
+    if (this.isLoading) return;
+    this.historyIndex = 0;
+    this.cg.cancelPremove();
+    this.updateBoard();
+  }
+
+  goToPrevious() {
+    if (this.isLoading || this.historyIndex <= 0) return;
+    this.historyIndex--;
+    this.cg.cancelPremove();
+    this.updateBoard();
+  }
+
+  goToNext() {
+    if (this.isLoading || this.historyIndex >= this.moveHistory.length - 1) return;
+    this.historyIndex++;
+    if (this.isAtLastMove) this.cg.cancelPremove(); // Clear if somehow set while going back/forth
+    this.updateBoard();
+  }
+
+  goToLast() {
+    if (this.isLoading) return;
+    this.historyIndex = this.moveHistory.length - 1;
+    this.cg.cancelPremove();
+    this.updateBoard();
+  }
+
+  get isAtLastMove(): boolean {
+    return this.historyIndex === this.moveHistory.length - 1;
+  }
+
+  get isAtFirstMove(): boolean {
+    return this.historyIndex === 0;
   }
 
   private getLegalMoves(): Map<Key, Key[]> {
@@ -212,6 +254,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           this.currentOrientation = this.chess.turn() === 'w' ? 'white' : 'black';
           this.cg.set({ orientation: this.currentOrientation });
         }
+        this.moveHistory = this.moveHistory.slice(0, this.historyIndex + 1);
+        this.moveHistory.push(this.chess.fen());
+        this.historyIndex = this.moveHistory.length - 1;
         this.updateBoard();
         this.checkGameStatus();
         this.checkIfLLMTurn();
@@ -277,6 +322,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       const move = this.chess.move({ from, to, promotion });
       if (move) {
+        this.moveHistory.push(this.chess.fen());
+        this.historyIndex = this.moveHistory.length - 1;
         this.updateBoard([from, to]);
         this.checkGameStatus();
         // Explicitly trigger premove check after AI move
@@ -299,18 +346,23 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   private updateBoard(lastMove?: [Key, Key]) {
-    const turn = this.chess.turn() === 'w' ? 'white' : 'black';
-    const isPlayerTurn = !this.isAIEnabled || turn === this.playerColor;
+    const fen = this.moveHistory[this.historyIndex];
+    const tempChess = new Chess(fen);
+    const turn = tempChess.turn() === 'w' ? 'white' : 'black';
+    const isPlayerTurn = (!this.isAIEnabled || turn === this.playerColor) && this.isAtLastMove;
 
     this.cg.set({
-      fen: this.chess.fen(),
+      fen: fen,
       turnColor: turn,
       movable: {
-        color: !this.isAIEnabled ? turn : this.playerColor,
+        color: this.isAtLastMove ? (!this.isAIEnabled ? turn : this.playerColor) : undefined,
         dests: isPlayerTurn ? this.getLegalMoves() : new Map(),
       },
-      check: this.chess.inCheck(),
-      lastMove: lastMove ?? this.cg?.state?.lastMove
+      premovable: {
+        enabled: this.isAtLastMove
+      },
+      check: tempChess.inCheck(),
+      lastMove: lastMove ?? (this.isAtLastMove ? this.cg?.state?.lastMove : undefined)
     });
     this.cdr.detectChanges();
   }
