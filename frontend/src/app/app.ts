@@ -33,7 +33,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   showApiKeyModal = false;
   tempApiKey = '';
   validationError: string | null = null;
-  gameMode: GameMode = GameMode.HUMAN_VS_LLM;
+  gameMode: GameMode = GameMode.HUMAN_VS_HUMAN;
   isAutoPlayPaused = true;
 
   GameMode = GameMode; // Make enum available in template
@@ -111,10 +111,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   toggleAI() {
     this.zone.run(() => {
-      const nextState = this.gameMode === GameMode.HUMAN_VS_LLM ? false : GameMode.HUMAN_VS_LLM;
-      // This toggle logic for the AI button needs to be updated to handle modes
-      // For now, let's just make it toggle between HUMAN_VS_LLM and HUMAN_VS_HUMAN?
-      // Actually, the user wants a mode selector. I'll just change the gameMode based on UI.
+      const targetMode = this.gameMode === GameMode.HUMAN_VS_HUMAN
+        ? GameMode.HUMAN_VS_LLM
+        : GameMode.HUMAN_VS_HUMAN;
+      this.setGameMode(targetMode);
     });
   }
 
@@ -206,7 +206,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   flipBoard() {
-    if (this.isLoading) return;
     this.currentOrientation = this.currentOrientation === 'white' ? 'black' : 'white';
     this.cg.set({ orientation: this.currentOrientation });
     this.updateBoard();
@@ -359,10 +358,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         // Explicitly trigger premove check after AI move
         this.cg?.playPremove();
 
-        // Trigger next move if in LLM vs LLM mode
-        if (this.gameMode === GameMode.LLM_VS_LLM) {
-          setTimeout(() => this.checkIfLLMTurn(), 100);
-        }
+        // Trigger next move check regardless of game mode
+        // This handles:
+        // 1. LLM_VS_LLM mode (continuous play)
+        // 2. HUMAN_VS_LLM mode if the user flipped sides during thinking
+        setTimeout(() => this.checkIfLLMTurn(), 100);
       } else {
         this.updateBoard();
       }
@@ -404,7 +404,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         dests: isPlayerTurn ? this.getLegalMoves() : new Map(),
       },
       premovable: {
-        enabled: this.isAtLastMove
+        enabled: this.gameMode !== GameMode.LLM_VS_LLM
       },
       check: tempChess.inCheck(),
       lastMove: lastMove ?? (this.isAtLastMove ? this.cg?.state?.lastMove : undefined)
