@@ -16,6 +16,13 @@ import { GameMode } from './models/game-mode.enum';
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('chessBoard') chessBoard!: ElementRef;
+  @ViewChild('apiKeyInput') set apiKeyInput(content: ElementRef) {
+    if (content) {
+      setTimeout(() => {
+        content.nativeElement.focus();
+      }, 0);
+    }
+  }
 
   private chessApi = inject(ChessApiService);
   private zone = inject(NgZone);
