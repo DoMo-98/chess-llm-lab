@@ -6,6 +6,7 @@ import { Key } from 'chessground/types';
 import { Chess } from 'chess.js';
 import { MoveResponse } from './models/move-response.interface';
 import { ChessApiService } from './services/chess-api.service';
+import { GameMode } from './models/game-mode.enum';
 
 @Component({
   selector: 'app-root',
@@ -19,20 +20,23 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private chessApi = inject(ChessApiService);
   private zone = inject(NgZone);
   private cdr = inject(ChangeDetectorRef);
-  private chess = new Chess();
+  public chess = new Chess();
   private cg!: Api;
   private resizeObserver!: ResizeObserver;
   private currentOrientation: 'white' | 'black' = 'white';
   private moveHistory: string[] = [];
   private historyIndex = 0;
 
-  isAIEnabled = false;
+  isValidating = false;
   isLoading = false;
   isLocked = false;
   showApiKeyModal = false;
   tempApiKey = '';
   validationError: string | null = null;
-  isValidating = false;
+  gameMode: GameMode = GameMode.HUMAN_VS_LLM;
+  isAutoPlayPaused = true;
+
+  GameMode = GameMode; // Make enum available in template
 
   get playerColor(): 'white' | 'black' {
     return this.currentOrientation;
@@ -40,6 +44,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   get llmColor(): 'white' | 'black' {
     return this.currentOrientation === 'white' ? 'black' : 'white';
+  }
+
+  get isBottomPlayerTurn(): boolean {
+    const turn = this.chess.turn() === 'w' ? 'white' : 'black';
+    return turn === this.currentOrientation;
+  }
+
+  get isTopPlayerTurn(): boolean {
+    return !this.isBottomPlayerTurn;
+  }
+
+  get isSimulationActive(): boolean {
+    return this.gameMode === GameMode.LLM_VS_LLM && !this.isAutoPlayPaused;
   }
 
   ngAfterViewInit(): void {
@@ -94,14 +111,27 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   toggleAI() {
     this.zone.run(() => {
-      const nextState = !this.isAIEnabled;
+      const nextState = this.gameMode === GameMode.HUMAN_VS_LLM ? false : GameMode.HUMAN_VS_LLM;
+      // This toggle logic for the AI button needs to be updated to handle modes
+      // For now, let's just make it toggle between HUMAN_VS_LLM and HUMAN_VS_HUMAN?
+      // Actually, the user wants a mode selector. I'll just change the gameMode based on UI.
+    });
+  }
 
-      if (nextState) {
+  setGameMode(mode: GameMode) {
+    this.zone.run(() => {
+      if (mode === this.gameMode) return;
+
+      if (mode !== GameMode.HUMAN_VS_HUMAN) {
         // Check if API key is configured
         this.chessApi.checkHealth().subscribe({
           next: (response) => {
             if (response.openai_api_key_configured) {
-              this.enableAI();
+              this.gameMode = mode;
+              this.isAutoPlayPaused = mode === GameMode.LLM_VS_LLM; // Start paused for LLM vs LLM
+              this.updateBoard();
+              this.checkIfLLMTurn();
+              this.cdr.detectChanges();
             } else {
               this.showApiKeyModal = true;
               this.cdr.detectChanges();
@@ -109,23 +139,27 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           },
           error: () => {
             console.error('Failed to check backend health');
-            this.showApiKeyModal = true; // Fallback to asking
+            this.showApiKeyModal = true;
             this.cdr.detectChanges();
           }
         });
       } else {
-        this.isAIEnabled = false;
-        console.log('AI Toggle: DISABLED');
+        this.gameMode = mode;
         this.updateBoard();
+        this.cdr.detectChanges();
       }
     });
   }
 
-  private enableAI() {
-    this.isAIEnabled = true;
-    console.log('AI Toggle: ENABLED');
-    this.updateBoard();
-    setTimeout(() => this.checkIfLLMTurn(), 50);
+  get isAIEnabled(): boolean {
+    return this.gameMode !== GameMode.HUMAN_VS_HUMAN;
+  }
+
+  toggleAutoPlay() {
+    this.isAutoPlayPaused = !this.isAutoPlayPaused;
+    if (!this.isAutoPlayPaused) {
+      this.checkIfLLMTurn();
+    }
   }
 
   closeModal() {
@@ -153,7 +187,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         this.isValidating = false;
         this.showApiKeyModal = false;
         this.tempApiKey = '';
-        this.enableAI();
+        if (this.gameMode === GameMode.HUMAN_VS_HUMAN) {
+          this.gameMode = GameMode.HUMAN_VS_LLM;
+        }
+        this.updateBoard();
+        this.checkIfLLMTurn();
       },
       error: (err: any) => {
         this.isValidating = false;
@@ -264,18 +302,16 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   private checkIfLLMTurn() {
     if (!this.isAIEnabled || this.chess.isGameOver() || this.isLoading) {
-      console.log('checkIfLLMTurn skipped:', {
-        isAIEnabled: this.isAIEnabled,
-        isGameOver: this.chess.isGameOver(),
-        isLoading: this.isLoading
-      });
+      return;
+    }
+
+    if (this.gameMode === GameMode.LLM_VS_LLM && this.isAutoPlayPaused) {
       return;
     }
 
     const currentTurn = this.chess.turn() === 'w' ? 'white' : 'black';
-    console.log('Checking turn:', { currentTurn, llmColor: this.llmColor });
 
-    if (currentTurn === this.llmColor) {
+    if (this.gameMode === GameMode.LLM_VS_LLM || currentTurn === this.llmColor) {
       console.log('Triggering AI move...');
       this.requestLLMMove();
     }
@@ -322,6 +358,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         this.checkGameStatus();
         // Explicitly trigger premove check after AI move
         this.cg?.playPremove();
+
+        // Trigger next move if in LLM vs LLM mode
+        if (this.gameMode === GameMode.LLM_VS_LLM) {
+          setTimeout(() => this.checkIfLLMTurn(), 100);
+        }
       } else {
         this.updateBoard();
       }
@@ -343,13 +384,23 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const fen = this.moveHistory[this.historyIndex];
     const tempChess = new Chess(fen);
     const turn = tempChess.turn() === 'w' ? 'white' : 'black';
-    const isPlayerTurn = (!this.isAIEnabled || turn === this.playerColor) && this.isAtLastMove;
+
+    // In HUMAN_VS_LLM, player can move if it's their turn
+    // In LLM_VS_LLM, player cannot move (spectator)
+    let isPlayerTurn = false;
+    if (this.isAtLastMove && !this.isLoading) {
+      if (this.gameMode === GameMode.HUMAN_VS_LLM) {
+        isPlayerTurn = turn === this.playerColor;
+      } else if (this.gameMode === GameMode.HUMAN_VS_HUMAN) {
+        isPlayerTurn = true;
+      }
+    }
 
     this.cg.set({
       fen: fen,
       turnColor: turn,
       movable: {
-        color: this.isAtLastMove ? (!this.isAIEnabled ? turn : this.playerColor) : undefined,
+        color: this.isAtLastMove ? (this.gameMode === GameMode.HUMAN_VS_HUMAN ? turn : (this.gameMode === GameMode.HUMAN_VS_LLM ? this.playerColor : undefined)) : undefined,
         dests: isPlayerTurn ? this.getLegalMoves() : new Map(),
       },
       premovable: {
@@ -362,7 +413,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   private checkGameStatus() {
-    if (this.chess.isCheckmate()) alert('Checkmate!');
-    else if (this.chess.isDraw()) alert('Draw');
+    if (this.chess.isGameOver()) {
+      this.isAutoPlayPaused = true;
+      if (this.chess.isCheckmate()) alert('Checkmate!');
+      else if (this.chess.isDraw()) alert('Draw');
+    }
   }
 }
