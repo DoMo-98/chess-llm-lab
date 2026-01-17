@@ -4,9 +4,9 @@ import { Chessground } from 'chessground';
 import { Api } from 'chessground/api';
 import { Key } from 'chessground/types';
 import { Chess } from 'chess.js';
-import { MoveResponse } from './models/move-response.interface';
+import { MoveResponse } from './models/move-response';
 import { ChessApiService } from './services/chess-api.service';
-import { GameMode } from './models/game-mode.enum';
+import { GameMode } from './models/game-mode';
 
 @Component({
   selector: 'app-root',

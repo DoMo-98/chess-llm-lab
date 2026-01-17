@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { MoveResponse } from '../models/move-response.interface';
+import { MoveResponse } from '../models/move-response';
 
 @Injectable({
     providedIn: 'root'
