@@ -145,6 +145,15 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  updateModel(side: 'white' | 'black', model: string) {
+    if (side === 'white') {
+      this.whiteModel = model;
+    } else {
+      this.blackModel = model;
+    }
+    this.onModelChange(side);
+  }
+
   ngOnDestroy() {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
