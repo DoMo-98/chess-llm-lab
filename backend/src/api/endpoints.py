@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 
 import chess
@@ -8,6 +9,7 @@ from src.core.config import get_global_api_key, get_openai_client, set_global_ap
 from src.models.schemas import ApiKeyRequest, MoveRequest, MoveResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get("/health")
@@ -46,6 +48,7 @@ async def get_move(request: MoveRequest):
     # Create a dynamic Enum for legal moves
     move_map = {m.uci(): m.uci() for m in legal_moves}
     MoveEnum = Enum("MoveEnum", move_map, type=str)
+    logger.info(f"MoveEnum count for current request: {len(MoveEnum)}")
 
     # Define the response structure using the dynamic Enum
     class MoveSelection(BaseModel):
