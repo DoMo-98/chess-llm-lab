@@ -5,7 +5,11 @@ import chess
 from fastapi import APIRouter, HTTPException
 from openai import AsyncOpenAI
 from pydantic import BaseModel
-from src.core.config import get_global_api_key, get_openai_client, set_global_api_key
+from src.core.config import (
+    get_global_api_key,
+    get_langchain_client,
+    set_global_api_key,
+)
 from src.models.schemas import ApiKeyRequest, MoveRequest, MoveResponse
 
 router = APIRouter()
@@ -62,25 +66,30 @@ async def get_move(request: MoveRequest):
             detail="OpenAI API key is missing. Please configure it in the settings.",
         )
 
-    client = get_openai_client()
+    llm = get_langchain_client()
+    structured_llm = llm.with_structured_output(MoveSelection)
+
     try:
-        completion = await client.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a grandmaster chess player. Analyze the given FEN and select the best move from the available legal moves. Provide your reasoning and the chosen move.",
-                },
-                {"role": "user", "content": f"FEN: {request.fen}"},
-            ],
-            response_format=MoveSelection,
+        selected_move_data = await structured_llm.ainvoke(
+            [
+                (
+                    "system",
+                    "You are a grandmaster chess player. Analyze the given FEN and select the best move from the available legal moves. Provide your reasoning and the chosen move.",
+                ),
+                ("user", f"FEN: {request.fen}"),
+            ]
         )
 
-        selected_move_data = completion.choices[0].message.parsed
         if not selected_move_data:
             raise HTTPException(status_code=500, detail="Failed to parse LLM response")
 
-        move_uci = selected_move_data.move.value
+        # Handle both dict and Pydantic model (LangChain can return either depending on config)
+        if isinstance(selected_move_data, dict):
+            move_uci = selected_move_data["move"]
+        else:
+            move_uci = selected_move_data.move
+            if hasattr(move_uci, "value"):
+                move_uci = move_uci.value
         move = chess.Move.from_uci(move_uci)
         san = board.san(move)
 

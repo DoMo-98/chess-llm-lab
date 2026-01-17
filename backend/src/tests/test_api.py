@@ -93,34 +93,33 @@ def test_move_no_api_key(client):
     assert "OpenAI API key is missing" in response.json()["detail"]
 
 
-@patch("src.api.endpoints.get_openai_client")
+@patch("src.api.endpoints.get_langchain_client")
 @patch("src.api.endpoints.get_global_api_key")
 @pytest.mark.asyncio
-async def test_move_valid_fen(mock_get_key, mock_get_client, client):
-    """Test a valid move request with mocked OpenAI response."""
+async def test_move_valid_fen(mock_get_key, mock_get_langchain, client):
+    """Test a valid move request with mocked LangChain response."""
     # Setup mocks
     mock_get_key.return_value = "sk-mock-key"
-    mock_client_instance = AsyncMock()
-    mock_get_client.return_value = mock_client_instance
+    mock_llm = MagicMock()
+    mock_structured_llm = MagicMock()
+    mock_get_langchain.return_value = mock_llm
+    mock_llm.with_structured_output.return_value = mock_structured_llm
 
-    # Mock the structure of the LLM response
-    # We need to mock: completion.choices[0].message.parsed.move.value
-    # And allow access via attributes
-    mock_parsed_response = MagicMock()
-    mock_parsed_response.move.value = "e2e4"
-    mock_parsed_response.reasoning = "Best opening move."
+    # Create dummy move data
+    class MoveSelectionMock:
+        def __init__(self, move_val, reasoning):
+            # Inner enum-like object with a 'value' field.
+            class MoveVal:
+                def __init__(self, v):
+                    self.value = v
 
-    mock_message = MagicMock()
-    mock_message.parsed = mock_parsed_response
+            self.move = MoveVal(move_val)
+            self.reasoning = reasoning
 
-    mock_choice = MagicMock()
-    mock_choice.message = mock_message
+    mock_response = MoveSelectionMock("e2e4", "Best opening move.")
 
-    mock_completion = MagicMock()
-    mock_completion.choices = [mock_choice]
-
-    # Because endpoints.py uses `await client.chat.completions.parse(...)`
-    mock_client_instance.chat.completions.parse.return_value = mock_completion
+    # Mock ainvoke to return our mock response
+    mock_structured_llm.ainvoke = AsyncMock(return_value=mock_response)
 
     # Starting position FEN
     start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
