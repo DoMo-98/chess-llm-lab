@@ -21,7 +21,7 @@ def get_langchain_client():
     return ChatOpenAI(
         api_key=SecretStr(_openai_api_key) if _openai_api_key else None,
         model="gpt-4o-mini",
-        temperature=0,
+        temperature=0.2,
     )
 
 
