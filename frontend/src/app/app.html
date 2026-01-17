@@ -103,7 +103,7 @@
     <!-- Navigation Controls (Glassmorphism) -->
     <div
       class="absolute left-1/2 -bottom-6 -translate-x-1/2 flex items-center gap-1 bg-white/10 backdrop-blur-md border border-white/20 p-1.5 rounded-full shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] z-50">
-      <button (click)="goToFirst()" [disabled]="isLoading || isAtFirstMove"
+      <button (click)="goToFirst()" [disabled]="isAtFirstMove"
         class="p-2 text-chess-text enabled:hover:text-white enabled:hover:bg-white/10 rounded-full transition-all disabled:opacity-30 disabled:cursor-default"
         title="First Move">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -112,7 +112,7 @@
           <polyline points="18 17 13 12 18 7"></polyline>
         </svg>
       </button>
-      <button (click)="goToPrevious()" [disabled]="isLoading || isAtFirstMove"
+      <button (click)="goToPrevious()" [disabled]="isAtFirstMove"
         class="p-2 text-chess-text enabled:hover:text-white enabled:hover:bg-white/10 rounded-full transition-all disabled:opacity-30 disabled:cursor-default"
         title="Previous Move">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -120,7 +120,7 @@
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
       </button>
-      <button (click)="goToNext()" [disabled]="isLoading || isAtLastMove"
+      <button (click)="goToNext()" [disabled]="isAtLastMove"
         class="p-2 text-chess-text enabled:hover:text-white enabled:hover:bg-white/10 rounded-full transition-all disabled:opacity-30 disabled:cursor-default"
         title="Next Move">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -128,7 +128,7 @@
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
       </button>
-      <button (click)="goToLast()" [disabled]="isLoading || isAtLastMove"
+      <button (click)="goToLast()" [disabled]="isAtLastMove"
         class="p-2 text-chess-text enabled:hover:text-white enabled:hover:bg-white/10 rounded-full transition-all disabled:opacity-30 disabled:cursor-default"
         title="Last Move">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"

@@ -200,30 +200,24 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   goToFirst() {
-    if (this.isLoading) return;
     this.historyIndex = 0;
-    this.cg.cancelPremove();
     this.updateBoard();
   }
 
   goToPrevious() {
-    if (this.isLoading || this.historyIndex <= 0) return;
+    if (this.historyIndex <= 0) return;
     this.historyIndex--;
-    this.cg.cancelPremove();
     this.updateBoard();
   }
 
   goToNext() {
-    if (this.isLoading || this.historyIndex >= this.moveHistory.length - 1) return;
+    if (this.historyIndex >= this.moveHistory.length - 1) return;
     this.historyIndex++;
-    if (this.isAtLastMove) this.cg.cancelPremove(); // Clear if somehow set while going back/forth
     this.updateBoard();
   }
 
   goToLast() {
-    if (this.isLoading) return;
     this.historyIndex = this.moveHistory.length - 1;
-    this.cg.cancelPremove();
     this.updateBoard();
   }
 
