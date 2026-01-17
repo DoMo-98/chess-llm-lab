@@ -8,6 +8,7 @@ Backend service for the Chess LLM Lab application. Designed as a stateless chess
 - **Framework**: FastAPI
 - **Package Manager**: [uv](https://github.com/astral-sh/uv)
 - **Chess Logic**: `python-chess`
+- **AI Integration**: LangChain (OpenAI Integration)
 - **Validation**: Pydantic
 - **Containerization**: Docker
 

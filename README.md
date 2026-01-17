@@ -5,7 +5,7 @@ A full-stack sandbox (Angular + Python) designed to evaluate and visualize LLM r
 ## Features
 
 - **Interactive Chessboard**: Responsive UI for playing chess matches.
-- **LLM Integration**: Play against OpenAI's models (e.g., `gpt-5-mini`).
+- **LLM Integration**: Play against OpenAI's models (e.g., `gpt-4o-mini`).
 - **AI Thought Process**: Visualize the reasoning behind each AI move.
 - **Game Modes**: Toggle between Human vs. AI and Human vs. Human.
 - **Board Controls**: Flip the board, lock orientation, and reset to initial position.
@@ -21,7 +21,7 @@ A full-stack sandbox (Angular + Python) designed to evaluate and visualize LLM r
 
 ### Backend
 - **Framework**: FastAPI (Python 3.12)
-- **AI Integration**: OpenAI SDK (Structured Outputs)
+- **AI Integration**: LangChain (OpenAI Integration)
 - **Chess Logic**: `python-chess`
 - **Dependency Management**: `uv`
 
