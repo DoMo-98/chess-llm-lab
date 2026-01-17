@@ -7,6 +7,7 @@ class ApiKeyRequest(BaseModel):
 
 class MoveRequest(BaseModel):
     fen: str
+    model: str = "gpt-4o-mini"
 
 
 class MoveResponse(BaseModel):

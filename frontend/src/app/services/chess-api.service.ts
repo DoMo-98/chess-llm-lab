@@ -18,7 +18,11 @@ export class ChessApiService {
         return this.http.post(`${this.apiUrl}/config/api-key`, { api_key: apiKey });
     }
 
-    requestMove(fen: string): Observable<MoveResponse> {
-        return this.http.post<MoveResponse>(`${this.apiUrl}/move`, { fen });
+    getModels(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.apiUrl}/config/models`);
+    }
+
+    requestMove(fen: string, model?: string): Observable<MoveResponse> {
+        return this.http.post<MoveResponse>(`${this.apiUrl}/move`, { fen, model });
     }
 }

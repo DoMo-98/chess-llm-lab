@@ -157,7 +157,7 @@ describe('AppComponent', () => {
           color: undefined
         }),
         premovable: expect.objectContaining({
-          enabled: false
+          enabled: true
         })
       }));
     });

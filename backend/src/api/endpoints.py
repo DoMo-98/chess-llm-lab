@@ -35,6 +35,31 @@ async def set_api_key(request: ApiKeyRequest):
     return {"status": "success", "message": "API key validated and updated"}
 
 
+@router.get("/config/models")
+async def get_models():
+    api_key = get_global_api_key()
+    if not api_key:
+        return []
+
+    client = AsyncOpenAI(api_key=api_key)
+    try:
+        models = await client.models.list()
+        # Filter for models that are likely chat models (GPT-3.5, GPT-4, o1, etc.)
+        chat_models = [
+            m.id
+            for m in models.data
+            if m.id.startswith(("gpt-", "o1-"))
+            and not any(
+                x in m.id for x in ["-vision", "-instruct", "realtime", "audio"]
+            )
+        ]
+        logger.info(f"Found {len(chat_models)} chat models")
+        return sorted(chat_models)
+    except Exception as e:
+        logger.error(f"Error fetching models: {e}")
+        return ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"]  # Fallback
+
+
 @router.post("/move", response_model=MoveResponse)
 async def get_move(request: MoveRequest):
     try:
@@ -66,7 +91,8 @@ async def get_move(request: MoveRequest):
             detail="OpenAI API key is missing. Please configure it in the settings.",
         )
 
-    llm = get_langchain_client()
+    llm = get_langchain_client(model=request.model)
+    logger.info(f"Making move for FEN: {request.fen} using model: {request.model}")
     structured_llm = llm.with_structured_output(MoveSelection)
 
     try:

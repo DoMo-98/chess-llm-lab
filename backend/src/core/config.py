@@ -17,10 +17,10 @@ def get_openai_client():
     return AsyncOpenAI(api_key=_openai_api_key or "missing")
 
 
-def get_langchain_client():
+def get_langchain_client(model: str = "gpt-4o-mini"):
     return ChatOpenAI(
         api_key=SecretStr(_openai_api_key) if _openai_api_key else None,
-        model="gpt-4o-mini",
+        model=model,
         temperature=0.2,
     )
 

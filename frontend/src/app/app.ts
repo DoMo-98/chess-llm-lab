@@ -1,5 +1,6 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, OnDestroy, inject, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Chessground } from 'chessground';
 import { Api } from 'chessground/api';
 import { Key } from 'chessground/types';
@@ -11,7 +12,7 @@ import { GameMode } from './models/game-mode';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './app.html',
 })
 export class AppComponent implements AfterViewInit, OnDestroy {
@@ -26,7 +27,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   private chessApi = inject(ChessApiService);
   private zone = inject(NgZone);
-  private cdr = inject(ChangeDetectorRef);
+  public cdr = inject(ChangeDetectorRef);
   public chess = new Chess();
   private cg!: Api;
   private resizeObserver!: ResizeObserver;
@@ -42,6 +43,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   validationError: string | null = null;
   gameMode: GameMode = GameMode.HUMAN_VS_HUMAN;
   isAutoPlayPaused = true;
+  availableModels: string[] = [];
+  whiteModel = 'gpt-4o-mini';
+  blackModel = 'gpt-4o-mini';
 
   GameMode = GameMode; // Make enum available in template
 
@@ -51,6 +55,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   get llmColor(): 'white' | 'black' {
     return this.currentOrientation === 'white' ? 'black' : 'white';
+  }
+
+  get blackModelLabel(): string {
+    return this.currentOrientation === 'white' ? 'Top' : 'Bottom';
+  }
+
+  get whiteModelLabel(): string {
+    return this.currentOrientation === 'white' ? 'Bottom' : 'Top';
   }
 
   get isBottomPlayerTurn(): boolean {
@@ -107,7 +119,30 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.moveHistory = [this.chess.fen()];
     this.historyIndex = 0;
     this.updateBoard();
+    this.loadModels();
     this.checkIfLLMTurn();
+  }
+
+  private loadModels() {
+    this.chessApi.getModels().subscribe({
+      next: (models) => {
+        console.log(`Loaded ${models.length} models`);
+        this.availableModels = models;
+        const defaultModel = models.includes('gpt-4o-mini') ? 'gpt-4o-mini' : (models.length > 0 ? models[0] : 'gpt-4o-mini');
+
+        if (!models.includes(this.whiteModel)) this.whiteModel = defaultModel;
+        if (!models.includes(this.blackModel)) this.blackModel = defaultModel;
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Failed to load models', err)
+    });
+  }
+
+  onModelChange(side: 'white' | 'black') {
+    const model = side === 'white' ? this.whiteModel : this.blackModel;
+    console.log(`[Model Change] Side: ${side}, New Model: ${model}`);
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy() {
@@ -197,6 +232,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         if (this.gameMode === GameMode.HUMAN_VS_HUMAN) {
           this.gameMode = GameMode.HUMAN_VS_LLM;
         }
+        this.loadModels();
         this.updateBoard();
         this.checkIfLLMTurn();
       },
@@ -245,23 +281,27 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   goToFirst() {
     this.historyIndex = 0;
+    this.cg?.cancelPremove();
     this.updateBoard();
   }
 
   goToPrevious() {
     if (this.historyIndex <= 0) return;
     this.historyIndex--;
+    this.cg?.cancelPremove();
     this.updateBoard();
   }
 
   goToNext() {
     if (this.historyIndex >= this.moveHistory.length - 1) return;
     this.historyIndex++;
+    this.cg?.cancelPremove();
     this.updateBoard();
   }
 
   goToLast() {
     this.historyIndex = this.moveHistory.length - 1;
+    this.cg?.cancelPremove();
     this.updateBoard();
   }
 
@@ -330,8 +370,13 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
 
 
+    const currentTurn = this.chess.turn() === 'w' ? 'white' : 'black';
+    const model = currentTurn === 'white' ? this.whiteModel : this.blackModel;
+
+    console.log(`[AI Move] Side: ${currentTurn}, Model: ${model}`);
+
     setTimeout(() => {
-      this.chessApi.requestMove(this.chess.fen()).subscribe({
+      this.chessApi.requestMove(this.chess.fen(), model).subscribe({
         next: (response) => {
           this.zone.run(() => {
             this.isLoading = false;
