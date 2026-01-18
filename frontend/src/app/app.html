@@ -11,8 +11,9 @@
   <div class="flex-1 w-full flex items-center justify-center pointer-events-none">
     <!-- Top Player Bar -->
     <div
-      class="pointer-events-auto flex items-center gap-4 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-2xl shadow-lg transition-all duration-300"
-      [class.ring-1]="isTopPlayerTurn" [class.ring-white/50]="isTopPlayerTurn" [class.bg-white/15]="isTopPlayerTurn">
+      class="relative group pointer-events-auto flex items-center gap-4 bg-white/10 backdrop-blur-md border border-white/20 px-5 h-10 rounded-2xl shadow-lg transition-all duration-300"
+      [class.ring-1]="isTopPlayerTurn" [class.ring-white/50]="isTopPlayerTurn" [class.bg-white/15]="isTopPlayerTurn"
+      [class.hover:bg-white/20]="isAIEnabled" [class.cursor-pointer]="isAIEnabled">
 
       <!-- Top Player Identity -->
       <div class="flex items-center gap-3">
@@ -24,12 +25,19 @@
         @if (isAIEnabled) {
         <!-- Top is always AI in AI modes -->
         <div class="flex flex-col">
-          <span class="text-[10px] text-white/40 uppercase tracking-widest font-bold leading-none mb-0.5">
-            {{ playerColor === 'white' ? 'Black' : 'White' }} (AI)
-          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-white text-sm font-bold truncate group-hover:text-white/90 transition-colors">
+              {{ playerColor === 'white' ? blackModel : whiteModel }}
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+              class="text-white/40 group-hover:text-white transition-colors">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
           <select [ngModel]="playerColor === 'white' ? blackModel : whiteModel"
             (ngModelChange)="updateModel(playerColor === 'white' ? 'black' : 'white', $event)"
-            class="bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 cursor-pointer appearance-none hover:text-white/80 transition-colors w-full min-w-[120px]">
+            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 appearance-none border-none p-0 focus:ring-0">
             @for (model of availableModels; track model) {
             <option [value]="model" class="bg-slate-900 text-white">{{ model }}</option>
             }
@@ -206,9 +214,10 @@
   <div class="flex-1 w-full flex flex-col items-center justify-center pointer-events-none">
     <!-- Bottom Player Bar -->
     <div
-      class="pointer-events-auto flex items-center gap-4 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-2xl shadow-lg transition-all duration-300"
+      class="relative group pointer-events-auto flex items-center gap-4 bg-white/10 backdrop-blur-md border border-white/20 px-5 h-10 rounded-2xl shadow-lg transition-all duration-300"
       [class.ring-1]="isBottomPlayerTurn" [class.ring-white/50]="isBottomPlayerTurn"
-      [class.bg-white/15]="isBottomPlayerTurn">
+      [class.bg-white/15]="isBottomPlayerTurn" [class.hover:bg-white/20]="gameMode === GameMode.LLM_VS_LLM"
+      [class.cursor-pointer]="gameMode === GameMode.LLM_VS_LLM">
 
       <!-- Bottom Player Identity -->
       <div class="flex items-center gap-3">
@@ -220,12 +229,19 @@
         @if (gameMode === GameMode.LLM_VS_LLM) {
         <!-- Bottom is AI in AIvAI -->
         <div class="flex flex-col">
-          <span class="text-[10px] text-white/40 uppercase tracking-widest font-bold leading-none mb-0.5">
-            {{ playerColor }} (AI)
-          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-white text-sm font-bold truncate group-hover:text-white/90 transition-colors">
+              {{ playerColor === 'white' ? whiteModel : blackModel }}
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+              class="text-white/40 group-hover:text-white transition-colors">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
           <select [ngModel]="playerColor === 'white' ? whiteModel : blackModel"
             (ngModelChange)="updateModel(playerColor === 'white' ? 'white' : 'black', $event)"
-            class="bg-transparent text-white text-sm font-bold border-none p-0 focus:ring-0 cursor-pointer appearance-none hover:text-white/80 transition-colors w-full min-w-[120px]">
+            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 appearance-none border-none p-0 focus:ring-0">
             @for (model of availableModels; track model) {
             <option [value]="model" class="bg-slate-900 text-white">{{ model }}</option>
             }
