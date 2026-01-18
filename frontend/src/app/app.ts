@@ -143,6 +143,18 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const model = side === 'white' ? this.whiteModel : this.blackModel;
     console.log(`[Model Change] Side: ${side}, New Model: ${model}`);
     this.cdr.detectChanges();
+
+    // If we're in Human vs AI mode and there was a failed AI move, retry
+    if (this.gameMode === GameMode.HUMAN_VS_LLM && this.hasFailedAIMove) {
+      const currentTurn = this.chess.turn() === 'w' ? 'white' : 'black';
+      // Only retry if the model change is for the AI player whose turn it is
+      if (side === this.llmColor && currentTurn === this.llmColor) {
+        console.log('[Model Change] Retrying failed AI move with new model');
+        this.hasFailedAIMove = false;
+        this.errorMessage = null;
+        this.requestLLMMove();
+      }
+    }
   }
 
   updateModel(side: 'white' | 'black', model: string) {
@@ -180,6 +192,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             if (response.openai_api_key_configured) {
               this.gameMode = mode;
               this.isAutoPlayPaused = mode === GameMode.LLM_VS_LLM; // Start paused for LLM vs LLM
+              this.hasFailedAIMove = false; // Reset on game mode change
+              this.errorMessage = null; // Clear any error messages
               this.updateBoard();
               this.checkIfLLMTurn();
               this.cdr.detectChanges();
@@ -196,6 +210,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         });
       } else {
         this.gameMode = mode;
+        this.hasFailedAIMove = false; // Reset on game mode change
+        this.errorMessage = null; // Clear any error messages
         this.updateBoard();
         this.cdr.detectChanges();
       }
@@ -280,6 +296,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.historyIndex = 0;
     this.isLoading = false;
     this.isLocked = false;
+    this.hasFailedAIMove = false; // Reset failed move flag
+    this.errorMessage = null; // Clear any error messages
     this.updateBoard();
     this.checkIfLLMTurn();
   }
@@ -372,10 +390,18 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  // ... inside AppComponent class
+  // Add this property to the class
+  errorMessage: string | null = null;
+  hasFailedAIMove = false; // Track if AI move failed
+
+  // ... (existing code)
+
   private requestLLMMove() {
     if (this.isLoading) return;
 
     this.isLoading = true;
+    this.errorMessage = null; // Clear previous errors
     this.cdr.detectChanges();
 
 
@@ -389,6 +415,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         next: (response) => {
           this.zone.run(() => {
             this.isLoading = false;
+            this.hasFailedAIMove = false; // Reset on success
             this.applyLLMMove(response.move);
             this.cdr.detectChanges();
           });
@@ -396,8 +423,31 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         error: (err: any) => {
           this.zone.run(() => {
             this.isLoading = false;
+            this.hasFailedAIMove = true; // Mark that AI move failed
+            this.isAutoPlayPaused = true; // Pause auto-play on error
+
+            // Map status codes to user-friendly messages
+            if (err.status === 429) {
+              this.errorMessage = "You've run out of credits or hit the rate limit. Please check your plan.";
+            } else if (err.status === 401) {
+              this.errorMessage = "Authentication failed. Please check your API key.";
+              this.showApiKeyModal = true; // Optionally prompt to fix key
+            } else if (err.status === 503) {
+              this.errorMessage = "Service unavailable. Check your internet connection.";
+            } else {
+              this.errorMessage = "An unexpected error occurred. Please try again.";
+            }
+
             this.updateBoard();
             this.cdr.detectChanges();
+
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+              if (this.errorMessage) {
+                this.errorMessage = null;
+                this.cdr.detectChanges();
+              }
+            }, 5000);
           });
         }
       });

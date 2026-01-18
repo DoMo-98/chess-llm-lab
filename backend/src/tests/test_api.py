@@ -132,3 +132,60 @@ async def test_move_valid_fen(mock_get_key, mock_get_langchain, client):
     data = response.json()
     assert data["move"] == "e2e4"
     assert data["san"] == "e4"
+
+
+@patch("src.api.endpoints.get_langchain_client")
+@patch("src.api.endpoints.get_global_api_key")
+@pytest.mark.asyncio
+async def test_move_rate_limit_error(mock_get_key, mock_get_langchain, client):
+    """Test handling of OpenAI RateLimitError."""
+    from openai import RateLimitError
+
+    mock_get_key.return_value = "sk-mock-key"
+    mock_llm = MagicMock()
+    mock_structured_llm = MagicMock()
+    mock_get_langchain.return_value = mock_llm
+    mock_llm.with_structured_output.return_value = mock_structured_llm
+
+    # Create a dummy response that mimics the OpenAI error structure if needed,
+    # but for raising the exception, we just need to instantiate it.
+    # RateLimitError requires 'message', 'response', and 'body' in recent versions usually,
+    # or at least we need to be careful how we construct it if strict.
+    # However, standard mocking often allows simpler instantiation or just matching the type.
+    # Let's try to mock the side_effect.
+
+    # Note: Constructing RateLimitError might require arguments.
+    # Using a simple mock side_effect that is an instance of the class is safer.
+    err = RateLimitError(message="Rate limit exceeded", response=MagicMock(), body=None)
+    mock_structured_llm.ainvoke = AsyncMock(side_effect=err)
+
+    start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    payload = {"fen": start_fen}
+    response = client.post("/move", json=payload)
+
+    assert response.status_code == 429
+    assert "OpenAI API quota exceeded" in response.json()["detail"]
+
+
+@patch("src.api.endpoints.get_langchain_client")
+@patch("src.api.endpoints.get_global_api_key")
+@pytest.mark.asyncio
+async def test_move_auth_error(mock_get_key, mock_get_langchain, client):
+    """Test handling of OpenAI AuthenticationError."""
+    from openai import AuthenticationError
+
+    mock_get_key.return_value = "sk-mock-key"
+    mock_llm = MagicMock()
+    mock_structured_llm = MagicMock()
+    mock_get_langchain.return_value = mock_llm
+    mock_llm.with_structured_output.return_value = mock_structured_llm
+
+    err = AuthenticationError(message="Invalid key", response=MagicMock(), body=None)
+    mock_structured_llm.ainvoke = AsyncMock(side_effect=err)
+
+    start_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    payload = {"fen": start_fen}
+    response = client.post("/move", json=payload)
+
+    assert response.status_code == 401
+    assert "OpenAI API key is invalid" in response.json()["detail"]

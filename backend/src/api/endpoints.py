@@ -3,7 +3,7 @@ from enum import Enum
 
 import chess
 from fastapi import APIRouter, HTTPException
-from openai import AsyncOpenAI
+from openai import APIConnectionError, AsyncOpenAI, AuthenticationError, RateLimitError
 from pydantic import BaseModel
 from src.core.config import (
     get_global_api_key,
@@ -28,6 +28,8 @@ async def set_api_key(request: ApiKeyRequest):
     try:
         # Minimal call to validate the key
         _ = await temp_client.models.list()
+    except AuthenticationError:
+        raise HTTPException(status_code=401, detail="Invalid OpenAI API key provided.")
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid OpenAI API key: {str(e)}")
 
@@ -121,5 +123,24 @@ async def get_move(request: MoveRequest):
 
         return MoveResponse(move=move_uci, san=san)
 
+    except RateLimitError as e:
+        logger.error(f"OpenAI Rate Limit Exceeded: {e}")
+        raise HTTPException(
+            status_code=429,
+            detail="OpenAI API quota exceeded or rate limit reached. Please check your plan limits.",
+        )
+    except AuthenticationError as e:
+        logger.error(f"OpenAI Authentication Failed: {e}")
+        raise HTTPException(
+            status_code=401,
+            detail="OpenAI API key is invalid or expired. Please check your settings.",
+        )
+    except APIConnectionError as e:
+        logger.error(f"OpenAI Connection Error: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Failed to connect to OpenAI API. Please check your internet connection.",
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in get_move: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
