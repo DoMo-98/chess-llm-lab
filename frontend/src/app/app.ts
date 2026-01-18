@@ -308,27 +308,35 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   goToFirst() {
     this.historyIndex = 0;
-    this.cg?.cancelPremove();
+    if (this.gameMode !== GameMode.HUMAN_VS_LLM) {
+      this.cg?.cancelPremove();
+    }
     this.updateBoard();
   }
 
   goToPrevious() {
     if (this.historyIndex <= 0) return;
     this.historyIndex--;
-    this.cg?.cancelPremove();
+    if (this.gameMode !== GameMode.HUMAN_VS_LLM) {
+      this.cg?.cancelPremove();
+    }
     this.updateBoard();
   }
 
   goToNext() {
     if (this.historyIndex >= this.moveHistory.length - 1) return;
     this.historyIndex++;
-    this.cg?.cancelPremove();
+    if (this.gameMode !== GameMode.HUMAN_VS_LLM) {
+      this.cg?.cancelPremove();
+    }
     this.updateBoard();
   }
 
   goToLast() {
     this.historyIndex = this.moveHistory.length - 1;
-    this.cg?.cancelPremove();
+    if (this.gameMode !== GameMode.HUMAN_VS_LLM) {
+      this.cg?.cancelPremove();
+    }
     this.updateBoard();
   }
 

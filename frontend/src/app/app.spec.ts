@@ -563,8 +563,42 @@ describe('AppComponent', () => {
       }));
     });
 
-    it('should cancel premoves when navigating', () => {
+    it('should preserve premoves when navigating in HUMAN_VS_LLM mode', () => {
+      vi.spyOn(chessApiService, 'checkHealth').mockReturnValue(of({ openai_api_key_configured: true }));
+      app.setGameMode(GameMode.HUMAN_VS_LLM);
+
       app.onMove('e2', 'e4');
+
+      // Navigate backwards - premove should be preserved
+      app.goToPrevious();
+      expect(app.cg.cancelPremove).not.toHaveBeenCalled();
+
+      // Navigate to first - premove should be preserved
+      app.goToFirst();
+      expect(app.cg.cancelPremove).not.toHaveBeenCalled();
+
+      // Navigate forward - premove should be preserved
+      app.goToNext();
+      expect(app.cg.cancelPremove).not.toHaveBeenCalled();
+
+      // Navigate to last - premove should be preserved
+      app.goToLast();
+      expect(app.cg.cancelPremove).not.toHaveBeenCalled();
+    });
+
+    it('should cancel premoves when navigating in HUMAN_VS_HUMAN mode', () => {
+      app.setGameMode(GameMode.HUMAN_VS_HUMAN);
+      app.onMove('e2', 'e4');
+
+      app.goToPrevious();
+      expect(app.cg.cancelPremove).toHaveBeenCalled();
+    });
+
+    it('should cancel premoves when navigating in LLM_VS_LLM mode', () => {
+      vi.spyOn(chessApiService, 'checkHealth').mockReturnValue(of({ openai_api_key_configured: true }));
+      app.setGameMode(GameMode.LLM_VS_LLM);
+      app.onMove('e2', 'e4');
+
       app.goToPrevious();
       expect(app.cg.cancelPremove).toHaveBeenCalled();
     });
