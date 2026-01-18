@@ -52,9 +52,9 @@ describe('ChessApiService', () => {
         req.flush({});
     });
 
-    it('should request move', () => {
+    it('should request move without model', () => {
         const fen = 'startpos';
-        const mockResponse = { move: 'e2e4' };
+        const mockResponse = { move: 'e2e4', san: 'e4' };
 
         service.requestMove(fen).subscribe((response) => {
             expect(response).toEqual(mockResponse);
@@ -62,7 +62,34 @@ describe('ChessApiService', () => {
 
         const req = httpMock.expectOne('http://localhost:8000/move');
         expect(req.request.method).toBe('POST');
-        expect(req.request.body).toEqual({ fen });
+        expect(req.request.body).toEqual({ fen, model: undefined });
         req.flush(mockResponse);
+    });
+
+    it('should request move with model parameter', () => {
+        const fen = 'startpos';
+        const model = 'gpt-4o';
+        const mockResponse = { move: 'e2e4', san: 'e4' };
+
+        service.requestMove(fen, model).subscribe((response) => {
+            expect(response).toEqual(mockResponse);
+        });
+
+        const req = httpMock.expectOne('http://localhost:8000/move');
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual({ fen, model });
+        req.flush(mockResponse);
+    });
+
+    it('should get available models', () => {
+        const mockModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'];
+
+        service.getModels().subscribe((response) => {
+            expect(response).toEqual(mockModels);
+        });
+
+        const req = httpMock.expectOne('http://localhost:8000/config/models');
+        expect(req.request.method).toBe('GET');
+        req.flush(mockModels);
     });
 });
