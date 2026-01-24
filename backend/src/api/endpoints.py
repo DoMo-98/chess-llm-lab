@@ -119,6 +119,7 @@ async def get_move(request: MoveRequest):
             if hasattr(move_uci, "value"):
                 move_uci = move_uci.value
         move = chess.Move.from_uci(move_uci)
+        logger.info(f"Model move: {move_uci}")
         san = board.san(move)
 
         return MoveResponse(move=move_uci, san=san)
