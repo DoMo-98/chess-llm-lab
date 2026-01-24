@@ -28,6 +28,3 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/src:/app/src
-    env_file:
-      - path: ./backend/.env
-        required: false

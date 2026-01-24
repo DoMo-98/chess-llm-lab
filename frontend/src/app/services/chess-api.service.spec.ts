@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { vi } from 'vitest';
 import { ChessApiService } from './chess-api.service';
 
 describe('ChessApiService', () => {
@@ -48,7 +49,8 @@ describe('ChessApiService', () => {
 
         const req = httpMock.expectOne('http://localhost:8000/config/api-key');
         expect(req.request.method).toBe('POST');
-        expect(req.request.body).toEqual({ api_key: apiKey });
+        expect(req.request.body).toEqual({});
+        expect(req.request.headers.get('X-OpenAI-Key')).toBe(apiKey);
         req.flush({});
     });
 
@@ -91,5 +93,17 @@ describe('ChessApiService', () => {
         const req = httpMock.expectOne('http://localhost:8000/config/models');
         expect(req.request.method).toBe('GET');
         req.flush(mockModels);
+    });
+
+
+    it('should include API key in headers if stored', () => {
+        const apiKey = 'stored-api-key';
+        vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(apiKey);
+
+        service.getModels().subscribe();
+
+        const req = httpMock.expectOne('http://localhost:8000/config/models');
+        expect(req.request.headers.get('X-OpenAI-Key')).toBe(apiKey);
+        req.flush([]);
     });
 });

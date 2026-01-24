@@ -1,34 +1,25 @@
-import logging
 import time
 import typing
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from openai import AsyncOpenAI
 
 from src.api.endpoints import router as api_router
-from src.core.config import get_global_api_key, set_global_api_key
+from src.core.logging_config import setup_logging
 
-logger = logging.getLogger(__name__)
+# Setup logging
+logger = setup_logging()
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
-    api_key = get_global_api_key()
-    if api_key:
-        logger.info("Validating initial OpenAI API key from .env...")
-        temp_client = AsyncOpenAI(api_key=api_key)
-        try:
-            _ = await temp_client.models.list()
-            logger.info("Initial API key is valid.")
-        except Exception as e:
-            logger.error(f"Initial API key is invalid: {e}")
-            set_global_api_key(None)
+async def lifespan(app: FastAPI):
+    logger.info("Starting Chess LLM Lab Backend...")
     yield
+    logger.info("Shutting down Chess LLM Lab Backend...")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title="Chess LLM Lab", lifespan=lifespan)
 
 
 @app.middleware("http")

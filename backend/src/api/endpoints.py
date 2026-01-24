@@ -1,30 +1,32 @@
 import logging
 from enum import Enum
+from typing import Annotated
 
 import chess
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException
 from openai import APIConnectionError, AsyncOpenAI, AuthenticationError, RateLimitError
 from pydantic import BaseModel
-from src.core.config import (
-    get_global_api_key,
-    get_langchain_client,
-    set_global_api_key,
-)
-from src.models.schemas import ApiKeyRequest, MoveRequest, MoveResponse
+from src.core.config import get_langchain_client
+from src.models.schemas import MoveRequest, MoveResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
 @router.get("/health")
-def health_check():
-    return {"status": "ok", "openai_api_key_configured": bool(get_global_api_key())}
+def health_check(x_openai_key: Annotated[str | None, Header()] = None):
+    # Health check is OK if the backend is running.
+    # We report if the client provided a key in this specific request.
+    return {"status": "ok", "openai_api_key_configured": bool(x_openai_key)}
 
 
 @router.post("/config/api-key")
-async def set_api_key(request: ApiKeyRequest):
+async def set_api_key(x_openai_key: Annotated[str | None, Header()] = None):
+    if not x_openai_key:
+        raise HTTPException(status_code=400, detail="Missing X-OpenAI-Key header")
+
     # Create temporary client to validate the key
-    temp_client = AsyncOpenAI(api_key=request.api_key)
+    temp_client = AsyncOpenAI(api_key=x_openai_key)
     try:
         # Minimal call to validate the key
         _ = await temp_client.models.list()
@@ -33,17 +35,16 @@ async def set_api_key(request: ApiKeyRequest):
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid OpenAI API key: {str(e)}")
 
-    set_global_api_key(request.api_key)
-    return {"status": "success", "message": "API key validated and updated"}
+    # We no longer store the key globally on the backend.
+    return {"status": "success", "message": "API key validated"}
 
 
 @router.get("/config/models")
-async def get_models():
-    api_key = get_global_api_key()
-    if not api_key:
+async def get_models(x_openai_key: Annotated[str | None, Header()] = None):
+    if not x_openai_key:
         return []
 
-    client = AsyncOpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=x_openai_key)
     try:
         models = await client.models.list()
         # Filter for models that are likely chat models (GPT-3.5, GPT-4, o1, etc.)
@@ -63,7 +64,9 @@ async def get_models():
 
 
 @router.post("/move", response_model=MoveResponse)
-async def get_move(request: MoveRequest):
+async def get_move(
+    request: MoveRequest, x_openai_key: Annotated[str | None, Header()] = None
+):
     try:
         board = chess.Board(request.fen)
     except ValueError:
@@ -86,14 +89,13 @@ async def get_move(request: MoveRequest):
         reasoning: str
         move: MoveEnum
 
-    api_key = get_global_api_key()
-    if not api_key:
+    if not x_openai_key:
         raise HTTPException(
             status_code=412,
             detail="OpenAI API key is missing. Please configure it in the settings.",
         )
 
-    llm = get_langchain_client(model=request.model)
+    llm = get_langchain_client(api_key=x_openai_key, model=request.model)
     logger.info(f"Making move for FEN: {request.fen} using model: {request.model}")
     structured_llm = llm.with_structured_output(MoveSelection)
 

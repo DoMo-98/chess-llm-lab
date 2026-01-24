@@ -12,3 +12,5 @@ def setup_logging():
 
     # Set specific log levels for some libraries if needed
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+
+    return logging.getLogger("src")
